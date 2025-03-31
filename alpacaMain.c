@@ -1,7 +1,7 @@
 // Xi Ting Yan wrote this program.
 // Ali Kutay Dastan wrote the program that interfaces with Ollama, was responsible for version control, and designed the repository that was used for this project.
 // Tahmeed Ahmed is responsible for debugging and error handling.
-// Ashkan Sharifi is responsible for implementing a feature to print contents of files into the program.l   
+// Ashkan Sharifi is responsible for implementing a feature to print contents of files into the program.
 // This program takes user input to create directories and files with the specified titles and contents.
 // Compile alpacaMain.c with alpacaLocal.c in the same directory as alpacaLocal.h and dirStruct.h.
 // The final goal of project Alpaca is to implement data streaming from Ollama into this program to create local files that store Ollama context.
@@ -34,6 +34,10 @@ int main() {
         return 1;
     }
 
+    if (indexFile(dirArr) == 1) {
+        return 1;
+    }
+
     printf("\n--- Alpaca: Ollama Assistant ---\n\n");
 
     do {
@@ -42,7 +46,8 @@ int main() {
         printf("1. List Available Models\n");
         printf("2. Create Context Category\n");
         printf("3. List Categories\n");
-        printf("4. Chat with Model\n");
+        printf("4. List Context Files\n");
+        printf("5. Chat with Model\n");
         printf("0. Exit Alpaca\n");
         scanf("%d", &whatDo);
         getchar(); // Buffer overflow protection for fgets() in called functions.
@@ -66,13 +71,29 @@ int main() {
                 // This function prints all indexed directories, see alpacaLocal.c for definition.
                 // Function return 0 after successful execution. Returns 1 if no indexed directories exist.
                 if (listDir(dirArr) == 0) {
-                    printf("End of directory list.\n\n");
+                    printf("End of category list.\n\n");
                 } else {
-                    printf("No directories exist.\n\n");
+                    printf("No categories exist.\n\n");
                 }
                 break;
 
             case 4:
+                int dirSelect = 0;
+                if (listDir(dirArr) == 0) {
+                    printf("Select a directory.\n");
+                    scanf("%d", &dirSelect);
+                    dirSelect--;
+                    if (listFile(dirArr, dirSelect) == 1) {
+                        printf("No contexts saved in this category.\n");
+                    } else {
+                        printf("End of context list.\n\n");
+                    }
+                } else {
+                    printf("No categories exist.\n\n");
+                }
+                break;
+                
+            case 5:
                 if (system("ollama list") != 0) {
                     printf("No models found.\n");
                     break;

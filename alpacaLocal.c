@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <dirent.h>
+#include <unistd.h>
 #include "alpacaOllama.h"
 
 // Defines function for directory creation based on user platform.
@@ -12,16 +13,59 @@
     #define MKDIR(path) mkdir(path, 0777)
 #endif
 
+int indexFile(struct dirStruct dirArr[MAX_DIR]) {
+
+    for (int i = 0; i < MAX_DIR; i++) {
+        if (dirArr[i].dirTitle[0] != '\0') {
+            int dirIndex = i;
+            struct dirent *fileent;
+            struct stat filest;
+            char dirPath[MAX_TITLE_CHAR + 3];
+
+            snprintf(dirPath, sizeof(dirPath), "./%s", dirArr[dirIndex].dirTitle);
+
+            DIR *fptr = opendir(dirPath);
+
+            if (fptr == NULL) {
+                printf("Error indexing files.\n\n");
+                return 1;
+            }
+
+            int fileIndex = 0;
+
+            while ((fileent = readdir(fptr)) != NULL) {
+                char filePath[MAX_TITLE_CHAR*2 + 2];
+                snprintf(filePath, sizeof(filePath), "%s/%s", dirPath, fileent->d_name);
+                if (stat(filePath, &filest) == 0) {
+                    if (!S_ISREG(filest.st_mode)) {
+                        continue;
+                    }
+                    if (strcmp(fileent->d_name, ".") == 0 || strcmp(fileent->d_name, "..") == 0) {
+                        continue;
+                    }
+                    strncpy(dirArr[dirIndex].fileTitle[fileIndex], fileent->d_name, sizeof(dirArr[dirIndex].fileTitle[fileIndex]) - 1);
+                    fileIndex++;
+                } else {
+                    printf("Error indexing pre-existing files.\n\n");
+                    return 1;
+                }
+            }
+        }
+    }
+    
+    return 0;
+}
+
 // This function indexes all directories that exist in the same directory as the program.
 int indexDir(struct dirStruct dirArr[MAX_DIR]) {
 
-    struct dirent *dent;
+    struct dirent *dirent;
     struct stat st;
 
-    DIR *dir = opendir("./");
+    DIR *dptr = opendir("./");
     
     // The function prints an error message, returns 1, and terminates if the pointer for the local directory fails to initialize.
-    if (dir == NULL) {
+    if (dptr == NULL) {
         printf("Error indexing directories.\n\n");
         return 1;
     }
@@ -30,14 +74,14 @@ int indexDir(struct dirStruct dirArr[MAX_DIR]) {
     char prevDir[] = {'.', '.'}; // This would be the directory name of the preceding directory.
 
     // Reads all files/directories until there are none left.
-    while ((dent = readdir(dir)) != NULL) {
-        if (stat(dent->d_name, &st) == 0) {
+    while ((dirent = readdir(dptr)) != NULL) {
+        if (stat(dirent->d_name, &st) == 0) {
             // We use stat functions to ensure only directories will be indexed.
             if (S_ISDIR(st.st_mode)) {
                 // This prevents the current directory and the previous directory from being indexed.
-                if (dent->d_name[0] != '.' && strcmp(dent->d_name, prevDir) != 0) {
+                if (dirent->d_name[0] != '.' && strcmp(dirent->d_name, prevDir) != 0) {
                     // We -1 from the amount of memory allocated or the title to preserve the null terminator.
-                    strncpy(dirArr[dirIndex].dirTitle, dent->d_name, sizeof(dirArr[dirIndex].dirTitle) - 1);
+                    strncpy(dirArr[dirIndex].dirTitle, dirent->d_name, sizeof(dirArr[dirIndex].dirTitle) - 1);
                     // The function increments dirIndex to move to the next directory in the directory struct.
                     dirIndex++;
                 }
@@ -48,7 +92,7 @@ int indexDir(struct dirStruct dirArr[MAX_DIR]) {
         } else {
             printf("Error verifying pre-existing directories.\n\n");
             return 1;
-        } 
+        }
     }
     return 0;
 }
@@ -111,7 +155,7 @@ int listFile(struct dirStruct dirArr[MAX_DIR], int dirIndex) {
     int fileExist = 0;
     for (int i = 0; i < MAX_FILES; i++) {
         if (dirArr[dirIndex].fileTitle[i][0] != '\0') {
-            printf("%s[%d]\n", dirArr[dirIndex].fileTitle, i + 1);
+            printf("%s[%d]\n", dirArr[dirIndex].fileTitle[i], i + 1);
             fileExist = 1;
         }
     }
@@ -144,7 +188,7 @@ int createFile(struct dirStruct dirArr[MAX_DIR], char response[MAX_RESPONSE]) {
         return 1;
 
     } else {
-        char fileContent[MAX_CONTENT_CHAR + 1]; // MAX_CONTENT_CHAR + 1 to include the null terminator of the string.
+ // MAX_CONTENT_CHAR + 1 to include the null terminator of the string.
         int fileIndex;
 
         // Scans for first available file title index.
