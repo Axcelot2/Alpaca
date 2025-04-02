@@ -9,3 +9,4 @@ int listDir(struct dirStruct dirArr[MAX_DIR]);
 int listFile(struct dirStruct dirArr[MAX_DIR], int dirIndex);
 void createDir(struct dirStruct dirArr[MAX_DIR]);
 int createFile(struct dirStruct dirArr[MAX_DIR], char response[MAX_RESPONSE]);
+int printFileContent(struct dirStruct dirArr[MAX_DIR]);

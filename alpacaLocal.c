@@ -34,7 +34,7 @@ int indexFile(struct dirStruct dirArr[MAX_DIR]) {
             int fileIndex = 0;
 
             while ((fileent = readdir(fptr)) != NULL) {
-                char filePath[MAX_TITLE_CHAR*2 + 2];
+                char filePath[MAX_TITLE_CHAR*2 + 4];
                 snprintf(filePath, sizeof(filePath), "%s/%s", dirPath, fileent->d_name);
                 if (stat(filePath, &filest) == 0) {
                     if (!S_ISREG(filest.st_mode)) {
@@ -135,8 +135,8 @@ void createDir(struct dirStruct dirArr[MAX_DIR]) {
 // This function prints all the indexed directories. Note that it DOES NOT scan and re-indexes directories, but simply prints what is already indexed.
 int listDir(struct dirStruct dirArr[MAX_DIR]) {
     int dirExist = 0;
+    printf("--- List of Available Categories ---\n\n");
     for (int i = 0; i < MAX_DIR; i++) {
-
         if (dirArr[i].dirTitle[0] != '\0') {
             printf("%s[%d]\n", dirArr[i].dirTitle, i + 1); // i + 1 because while the array is 0-indexed, the user will start counting from 1, not 0.
             dirExist = 1;
@@ -145,14 +145,17 @@ int listDir(struct dirStruct dirArr[MAX_DIR]) {
 
     // The function will return 0 once it finishes printing all indexed directories. It will return 1 instead if no directories are indexed. (dirExist == 0)
     if (dirExist == 1) {
+        printf("\n--- End of Category List ---\n\n");
         return 0;
     } else {
+        printf("\n--- No Categories Found ---\n\n");
         return 1;
     }
 }
 
 int listFile(struct dirStruct dirArr[MAX_DIR], int dirIndex) {
     int fileExist = 0;
+    printf("\n--- List of Files in %s ---\n\n", dirArr[dirIndex].dirTitle);
     for (int i = 0; i < MAX_FILES; i++) {
         if (dirArr[dirIndex].fileTitle[i][0] != '\0') {
             printf("%s[%d]\n", dirArr[dirIndex].fileTitle[i], i + 1);
@@ -160,8 +163,10 @@ int listFile(struct dirStruct dirArr[MAX_DIR], int dirIndex) {
         }
     }
     if (fileExist == 1) {
+        printf("\n--- End of File List ---\n\n");
         return 0;
     } else {
+        printf("\n--- No Files Found in %s ---\n\n", dirArr[dirIndex].dirTitle);
         return 1;
     }
 }
@@ -221,7 +226,7 @@ int createFile(struct dirStruct dirArr[MAX_DIR], char response[MAX_RESPONSE]) {
             fclose(fptr);
             return 1;
         } else {
-            fprintf(fptr, response);
+            fprintf(fptr, "%s", response);
         }
 
         // Closing file and printing success message.
@@ -229,4 +234,55 @@ int createFile(struct dirStruct dirArr[MAX_DIR], char response[MAX_RESPONSE]) {
         printf("File '%s' created.\n\n", dirArr[selectDir].fileTitle[fileIndex]);
         return 0;
     }
+}
+
+int printFileContent(struct dirStruct dirArr[MAX_DIR]) {
+    int dirIndex, fileIndex;
+
+    if (listDir(dirArr) == 1) {
+        return 1;
+    }
+
+    printf("Select a directory: ");
+    scanf("%d", &dirIndex);
+    getchar();
+    dirIndex--;
+
+    if (dirIndex < 0 || dirIndex >= MAX_DIR || dirArr[dirIndex].dirTitle[0] == '\0') {
+        printf("Invalid directory selected.\n\n");
+        return 1;
+    }
+
+    if (listFile(dirArr, dirIndex) == 1) {
+        return 1;
+    }
+
+    printf("Select a file: ");
+    scanf("%d", &fileIndex);
+    getchar();
+    fileIndex--;
+
+    if (fileIndex < 0 || fileIndex >= MAX_FILES || dirArr[dirIndex].fileTitle[fileIndex][0] == '\0') {
+        printf("Invalid file selected.\n\n");
+        return 1;
+    }
+
+    char filePath[2 * MAX_TITLE_CHAR + 2];
+    snprintf(filePath, sizeof(filePath), "%s/%s", dirArr[dirIndex].dirTitle, dirArr[dirIndex].fileTitle[fileIndex]);
+
+    FILE *fptr = fopen(filePath, "r");
+    if (fptr == NULL) {
+        printf("Error opening file.\n\n");
+        return 1;
+    }
+
+    printf("\n--- File Contents: '%s' ---\n\n", dirArr[dirIndex].fileTitle[fileIndex]);
+    char ch;
+    while ((ch = fgetc(fptr)) != EOF) {
+        putchar(ch);
+    }
+    printf("\n--- End of File ---\n\n");
+
+    fclose(fptr);
+    return 0;
 }
